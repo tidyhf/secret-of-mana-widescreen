@@ -87,10 +87,19 @@ It costs about 2% extra CPU on the busiest maps, which isn't noticeable in play.
 - **Neighbouring rooms:** some maps pack several rooms side by side, so you can sometimes see a sliver of the next room at the edge. It's real map data that 4:3 never reached.
 - **Hi-res menus:** the file select, weapon/magic level and naming screens keep their 4:3 boxes, and bsnes-hd only partly extends their scrolling background.
 - **Large BG bosses** can disappear a little early (up to ~40 px) inside the side area. Otherwise a wrapped copy would appear on the opposite side.
+- **Cutscene actors:** some scenes park characters just off the 4:3 screen (for example behind the treetops in the goblin village), and the wider view shows them waiting there.
+- **Map edges in cutscenes:** a few scripted scenes move the camera past the edge of the map. There the side areas fall back to the game's own wrap-around for the rest of that visit.
 
 Testing covered every map entrance (397 maps), checked tile by tile, plus 21 save files' worth of menus, the intro, Flammie flight and 44 boss arenas. Some story cutscenes move the camera in unusual ways and weren't all watched individually. If something looks off, please open an issue with a screenshot and where it happened.
 
 ## Changelog
+
+**v1.2**
+- The side areas no longer show the opposite edge of the map, or scenery the original camera never reached, when entering an area near its edge. The edge scenery is extended instead.
+- Characters walking off the left edge in cutscenes no longer reappear on the right.
+- Shadows no longer wrap around the screen.
+- Fixed a stray sprite piece that could appear in the side area, most visibly with the ring menu open.
+- The ROM is now 4 MB (the extra space holds the per-map edge tables).
 
 **v1.1**
 - Fixed a soft lock during the cannon travel cutscenes.
