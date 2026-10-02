@@ -90,6 +90,17 @@ It costs about 2% extra CPU on the busiest maps, which isn't noticeable in play.
 
 Testing covered every map entrance (397 maps), checked tile by tile, plus 21 save files' worth of menus, the intro, Flammie flight and 44 boss arenas. Some story cutscenes move the camera in unusual ways and weren't all watched individually. If something looks off, please open an issue with a screenshot and where it happened.
 
+## Changelog
+
+**v1.1**
+- Fixed a soft lock during the cannon travel cutscenes.
+- Knocked-out party members and other multi-part sprites no longer vanish in the side areas.
+- The log in the intro scene now stretches across the full width.
+- Enemy despawn and off-screen behaviour is back to the original game's.
+
+**v1.0**
+- First release.
+
 ## Building from source
 
 The patch is written for [asar](https://github.com/RPGHacker/asar) 1.90 or later.

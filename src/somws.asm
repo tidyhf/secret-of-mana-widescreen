@@ -39,13 +39,16 @@ org $C0E837 : CMP.w #256+!WS_EXT
 org $C0E83D : CMP.w #$10000-!WS_EXT
 org $C0E844 : CMP.w #256+!WS_EXT
 
+; --- multi-part object drawer (C2) clip range + x bit 8 ---
+org $C220A9 : dw !WS_EXT
+org $C220AF : dw 256+2*!WS_EXT
+org $C22118 : LSR
+
 ; --- small maps: centre + lock camera X ---
 org $C0CA71
     JSL ws_initcam
-org $C0DBDA
-    JML ws_bg1x_apply
-org $C0DC56
-    JML ws_bg2x_apply
+org $C0D6AC
+    JSR ws_follow_stub
 
 ; --- sprite X wrap fix (draw only) ---
 org $C0E640
@@ -57,17 +60,14 @@ ws_piece_loop:
     SEP #$20
     LDY $7C
     JMP $E644
+ws_follow_stub:
+    JSL ws_follow
+    JMP $DA6E
 assert pc() <= $C0C9E0
 org $C0E82F
     JSL ws_draw_shadow
     NOP
     NOP
-
-; --- offscreen object checks ---
-org $C0FC5A : dw $0140+!WS_EXT
-org $C0FC62 : dw $FFC0-!WS_EXT
-org $C2A379 : dw $0120+!WS_EXT
-org $C2A37E : dw $FFE0-!WS_EXT
 
 ; --- NMI: HOFS bit 9 (keeps bsnes-hd auto-ws on in field) ---
 org $C0C17B
@@ -79,6 +79,10 @@ org $C0C197
 org $C0C1AA
     JSL ws_nmi_bg2h
     NOP
+
+; --- intro log scene: widen BG3 on the log band only ---
+org $C0C158
+    JSL ws_hdma_en
 
 ; --- Flammie sky streaming ---
 org $C0849B
@@ -683,23 +687,75 @@ ws_initcam:
     SEP #$10
     RTL
 
-ws_bg1x_apply:
-    SEP #$30
+; player-follow on small maps: glide back to centre instead of scrolling
+ws_follow:
+    PHP
     JSR ws_is_small
-    BCS .go
-    JML $00DBFA
-.go:
-    LDA $84
-    JML $00DBDE
-
-ws_bg2x_apply:
-    SEP #$30
-    JSR ws_is_small
-    BCS .go
-    JML $00DC5C
-.go:
-    LDA $B9
-    JML $00DC5A
+    BCS .done
+    REP #$20
+    LDA $C0
+    SEC
+    SBC #$0100
+    CMP #$8000
+    ROR
+    BPL +
+    CLC
+    ADC $C0
++
+    SEC
+    SBC $A8
+    PHA
+    LDA $C0
+    LSR
+    PHA
+    LDA 3,S
+    BMI .neg
+    CMP 1,S
+    BCC .wrapped
+    SEC
+    SBC $C0
+    BRA .wrapped
+.neg:
+    CLC
+    ADC 1,S
+    BPL .negok
+    LDA 3,S
+    CLC
+    ADC $C0
+    BRA .wrapped
+.negok:
+    LDA 3,S
+.wrapped:
+    STA 3,S
+    PLA
+    PLA
+    CMP #$0000
+    BEQ .zero
+    BMI .left
+    CMP #$0002
+    BCC +
+    LDA #$0002
++
+    SEP #$20
+    STA $84
+    BRA .done
+.left:
+    EOR #$FFFF
+    INC
+    CMP #$0002
+    BCC +
+    LDA #$0002
++
+    SEP #$20
+    ORA #$80
+    STA $84
+    BRA .done
+.zero:
+    SEP #$20
+    STZ $84
+.done:
+    PLP
+    RTL
 
 ws_norm_x:
     PHA
@@ -855,6 +911,68 @@ ws_sky1_pcol:
     %ws_skyp($E0)
 ws_sky2_pcol:
     %ws_skyp($A0)
+
+; intro log scene (map $100): BG3 HOFS +$100 on the log band only
+!LOGTAB = $1DE0
+ws_hdma_en:
+    SEP #$20
+    LDA $2C
+    PHA
+    LDA $DD
+    CMP #$01
+    BNE .off
+    LDA $DC
+    BNE .off
+    LDA 1,S
+    AND #$08
+    BEQ .off
+    PHX
+    PHP
+    REP #$10
+    LDX #$0000
+    LDY #$0000
+.build:
+    LDA $7EEF00,X
+    BEQ .end
+    AND #$7F
+    STA !LOGTAB,Y
+    LDA $7EEF01,X
+    CMP #$82
+    LDA #$00
+    STA !LOGTAB+1,Y
+    BCC +
+    INC
++
+    STA !LOGTAB+2,Y
+    INX
+    INX
+    INX
+    INY
+    INY
+    INY
+    CPY #$0018
+    BCC .build
+.end:
+    LDA #$00
+    STA !LOGTAB,Y
+    LDA #$02
+    STA $4360
+    LDA #$11
+    STA $4361
+    LDA.b #!LOGTAB
+    STA $4362
+    LDA.b #!LOGTAB>>8
+    STA $4363
+    LDA #$7E
+    STA $4364
+    PLP
+    PLX
+    PLA
+    ORA #$40
+    RTL
+.off:
+    PLA
+    RTL
 
 ws_end:
 assert ws_end <= $C75000, "C7 free space overflow"
